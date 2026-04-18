@@ -188,8 +188,12 @@ const generateBill = async (req, res, next) => {
     
     // ---- Meta Info ----
     const d = new Date(sale.date);
+    const dateOptions = { timeZone: 'Asia/Kolkata' };
+    const dateStr = d.toLocaleDateString('en-IN', dateOptions);
+    const timeStr = d.toLocaleTimeString('en-IN', dateOptions);
+    
     doc.fontSize(9).font('Helvetica-Bold').text('Bill No : ', margin, doc.y, { continued: true }).font('Helvetica').text(sale.billNumber);
-    doc.font('Helvetica-Bold').text('Date    : ', margin, doc.y, { continued: true }).font('Helvetica').text(d.toLocaleDateString('en-IN') + ' ' + d.toLocaleTimeString('en-IN'));
+    doc.font('Helvetica-Bold').text('Date    : ', margin, doc.y, { continued: true }).font('Helvetica').text(dateStr + ' ' + timeStr);
     
     doc.font('Helvetica-Bold').text('User    : ', margin, doc.y, { continued: true }).font('Helvetica').text(sale.customerName || 'Walk-in Customer');
     if (sale.vehicleNumber) {
