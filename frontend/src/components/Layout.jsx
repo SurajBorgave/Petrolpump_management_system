@@ -107,12 +107,17 @@ const Layout = ({ children }) => {
           justifyContent: 'space-between',
           boxShadow: '0 1px 4px rgba(0,0,0,0.06)',
         }}>
-          <button
-            onClick={() => setSidebarOpen(!sidebarOpen)}
-            style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#4a5568' }}
-          >
-            ☰
-          </button>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
+            <button
+              onClick={() => setSidebarOpen(!sidebarOpen)}
+              style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#4a5568', padding: 0 }}
+            >
+              ☰
+            </button>
+            <span style={{ fontSize: 15, fontWeight: 600, color: '#2d3748' }}>
+              Hello, {user?.name || 'User'} 👋
+            </span>
+          </div>
           <div style={{ display: 'flex', alignItems: 'center', gap: 16 }}>
             <span style={{ color: '#718096', fontSize: 13 }}>
               {new Date().toLocaleDateString('en-IN', { weekday: 'long', year: 'numeric', month: 'long', day: 'numeric' })}
