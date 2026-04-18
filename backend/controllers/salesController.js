@@ -158,8 +158,11 @@ const generateBill = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Sale not found.' });
     }
 
-    // Thermal Receipt dimensions (e.g., 3-inch roll format) for an authentic look
-    const doc = new PDFDocument({ size: [300, 500], margin: 20 });
+    // Thermal Receipt dimensions: Standard width
+    const margin = 15;
+    const pageWidth = 300;
+    const rightEdge = pageWidth - margin;
+    const doc = new PDFDocument({ size: [pageWidth, 450], margin: margin });
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
@@ -168,91 +171,88 @@ const generateBill = async (req, res, next) => {
     );
 
     doc.pipe(res);
-
-    // ---- Receipt Border ----
-    doc.roundedRect(10, 10, 280, 480, 10).strokeColor('#e2e8f0').lineWidth(1).stroke();
     
     // ---- Header ----
-    doc.fillColor('#1a202c').fontSize(16).font('Helvetica-Bold').text('PETROL PUMP PRO', { align: 'center', marginTop: 15 });
-    doc.fontSize(9).font('Helvetica').text('123 Highway Revenue Road, MH', { align: 'center' });
-    doc.fontSize(8).text('GSTIN: 27XXXXX0000X1ZX', { align: 'center' });
-    doc.fontSize(8).text('Phone: +91 98XXX-XX000', { align: 'center' });
+    doc.fillColor('#000000').fontSize(16).font('Helvetica-Bold').text('PETROL PUMP PRO', margin, 15, { align: 'center', width: rightEdge - margin });
+    doc.fontSize(9).font('Helvetica').text('123 Highway Revenue Road, MH', margin, doc.y, { align: 'center', width: rightEdge - margin });
+    doc.fontSize(8).text('GSTIN: 27XXXXX0000X1ZX', margin, doc.y, { align: 'center', width: rightEdge - margin });
+    doc.fontSize(8).text('Phone: +91 98XXX-XX000', margin, doc.y, { align: 'center', width: rightEdge - margin });
     
     doc.moveDown(0.5);
-    doc.fontSize(11).font('Helvetica-Bold').text('TAX INVOICE', { align: 'center' });
+    doc.fontSize(11).font('Helvetica-Bold').text('TAX INVOICE', margin, doc.y, { align: 'center', width: rightEdge - margin });
     
     doc.moveDown(0.3);
-    doc.moveTo(15, doc.y).lineTo(285, doc.y).dash(3, { space: 3 }).strokeColor('#cbd5e0').stroke();
+    doc.moveTo(margin, doc.y).lineTo(rightEdge, doc.y).dash(3, { space: 3 }).strokeColor('#000000').lineWidth(1).stroke();
     doc.undash();
     doc.moveDown(0.5);
     
     // ---- Meta Info ----
     const d = new Date(sale.date);
-    doc.fontSize(9).font('Helvetica-Bold').text('Bill No : ', 20, doc.y, { continued: true }).font('Helvetica').text(sale.billNumber);
-    doc.font('Helvetica-Bold').text('Date    : ', 20, doc.y, { continued: true }).font('Helvetica').text(d.toLocaleDateString('en-IN') + ' ' + d.toLocaleTimeString('en-IN'));
+    doc.fontSize(9).font('Helvetica-Bold').text('Bill No : ', margin, doc.y, { continued: true }).font('Helvetica').text(sale.billNumber);
+    doc.font('Helvetica-Bold').text('Date    : ', margin, doc.y, { continued: true }).font('Helvetica').text(d.toLocaleDateString('en-IN') + ' ' + d.toLocaleTimeString('en-IN'));
     
-    doc.font('Helvetica-Bold').text('User    : ', 20, doc.y, { continued: true }).font('Helvetica').text(sale.customerName || 'Walk-in Customer');
+    doc.font('Helvetica-Bold').text('User    : ', margin, doc.y, { continued: true }).font('Helvetica').text(sale.customerName || 'Walk-in Customer');
     if (sale.vehicleNumber) {
-        doc.font('Helvetica-Bold').text('Vehicle : ', 20, doc.y, { continued: true }).font('Helvetica').text(sale.vehicleNumber);
+        doc.font('Helvetica-Bold').text('Vehicle : ', margin, doc.y, { continued: true }).font('Helvetica').text(sale.vehicleNumber);
     }
-    doc.font('Helvetica-Bold').text('Pay Mode: ', 20, doc.y, { continued: true }).font('Helvetica').text(sale.paymentMethod.toUpperCase());
-    doc.font('Helvetica-Bold').text('Nozzle  : ', 20, doc.y, { continued: true }).font('Helvetica').text('NZ-01 (' + sale.staffName + ')');
+    doc.font('Helvetica-Bold').text('Pay Mode: ', margin, doc.y, { continued: true }).font('Helvetica').text(sale.paymentMethod.toUpperCase());
+    doc.font('Helvetica-Bold').text('Nozzle  : ', margin, doc.y, { continued: true }).font('Helvetica').text('NZ-01 (' + sale.staffName + ')');
 
     doc.moveDown(0.5);
-    doc.moveTo(15, doc.y).lineTo(285, doc.y).dash(3, { space: 3 }).strokeColor('#cbd5e0').stroke();
+    doc.moveTo(margin, doc.y).lineTo(rightEdge, doc.y).dash(3, { space: 3 }).strokeColor('#000000').stroke();
     doc.undash();
     doc.moveDown(0.5);
 
     // ---- Table Header ----
     const startY = doc.y;
     doc.font('Helvetica-Bold').fontSize(8);
-    doc.text('ITEM', 20, startY);
-    doc.text('RATE', 130, startY);
-    doc.text('QTY(L)', 180, startY);
-    doc.text('AMOUNT', 225, startY, { width: 55, align: 'right' });
+    doc.text('ITEM', margin, startY);
+    doc.text('RATE', 100, startY);
+    doc.text('QTY(L)', 160, startY);
+    doc.text('AMOUNT', 220, startY, { width: 65, align: 'right' });
     
     doc.moveDown(0.3);
-    doc.moveTo(15, doc.y).lineTo(285, doc.y).strokeColor('#cbd5e0').stroke();
+    doc.moveTo(margin, doc.y).lineTo(rightEdge, doc.y).strokeColor('#000000').stroke();
     doc.moveDown(0.3);
 
     // ---- Table Row ----
     const itemY = doc.y;
     doc.font('Helvetica-Bold').fontSize(9);
-    doc.text(sale.fuelName.toUpperCase(), 20, itemY);
+    doc.text(sale.fuelName.toUpperCase(), margin, itemY);
     doc.font('Helvetica');
-    doc.text(sale.pricePerLiter.toFixed(2), 130, itemY);
-    doc.text(sale.quantity.toFixed(2), 180, itemY);
+    doc.text(sale.pricePerLiter.toFixed(2), 100, itemY);
+    doc.text(sale.quantity.toFixed(2), 160, itemY);
     doc.font('Helvetica-Bold');
-    doc.text(sale.totalAmount.toFixed(2), 225, itemY, { width: 55, align: 'right' });
+    doc.text(sale.totalAmount.toFixed(2), 220, itemY, { width: 65, align: 'right' });
 
     doc.moveDown(1.2);
-    doc.moveTo(15, doc.y).lineTo(285, doc.y).dash(3, { space: 3 }).strokeColor('#cbd5e0').stroke();
+    doc.moveTo(margin, doc.y).lineTo(rightEdge, doc.y).dash(3, { space: 3 }).strokeColor('#000000').stroke();
     doc.undash();
     doc.moveDown(0.8);
 
     // ---- Totals ----
     doc.font('Helvetica-Bold').fontSize(14);
-    doc.text('TOTAL:', 20, doc.y, { continued: true });
-    doc.text(`Rs. ${sale.totalAmount.toFixed(2)}`, 100, doc.y, { align: 'right', width: 180 });
+    doc.text('TOTAL:', margin, doc.y, { continued: true });
+    doc.text(`Rs. ${sale.totalAmount.toFixed(2)}`, margin, doc.y, { align: 'right', width: rightEdge - margin });
     
     // ---- Tax details ----
     doc.moveDown(0.8);
     doc.font('Helvetica').fontSize(8);
     const taxAmt = (sale.totalAmount * 0.18).toFixed(2);
     const baseAmt = (sale.totalAmount - taxAmt).toFixed(2);
-    doc.text(`Includes Base Price Rs. ${baseAmt}`, { align: 'center' });
-    doc.text(`Includes GST (18%) Rs. ${taxAmt}`, { align: 'center' });
+    doc.text(`Includes Base Price Rs. ${baseAmt}`, margin, doc.y, { align: 'center', width: rightEdge - margin });
+    doc.text(`Includes GST (18%) Rs. ${taxAmt}`, margin, doc.y, { align: 'center', width: rightEdge - margin });
 
     doc.moveDown(1.5);
-    doc.moveTo(15, doc.y).lineTo(285, doc.y).dash(3, { space: 3 }).strokeColor('#cbd5e0').stroke();
+    doc.moveTo(margin, doc.y).lineTo(rightEdge, doc.y).dash(3, { space: 3 }).strokeColor('#000000').stroke();
     doc.undash();
 
     // ---- Footer ----
     doc.moveDown(1);
-    doc.font('Helvetica-Bold').fontSize(10).text('THANK YOU FOR YOUR VISIT!', { align: 'center' });
-    doc.font('Helvetica').fontSize(9).text('DRIVE SAFE. SAVE FUEL.', { align: 'center' });
+    doc.font('Helvetica-Bold').fontSize(10).text('THANK YOU FOR YOUR VISIT!', margin, doc.y, { align: 'center', width: rightEdge - margin });
+    doc.font('Helvetica').fontSize(9).text('DRIVE SAFE. SAVE FUEL.', margin, doc.y, { align: 'center', width: rightEdge - margin });
     doc.moveDown(0.5);
-    doc.fontSize(7).fillColor('#a0aec0').text('Generated by PetrolPump Pro Systems', { align: 'center' });
+    doc.fontSize(7).fillColor('#777777').text('Generated by PetrolPump Pro Systems', margin, doc.y, { align: 'center', width: rightEdge - margin });
 
     doc.end();
   } catch (error) {
