@@ -175,8 +175,8 @@ const generateBill = async (req, res, next) => {
     // ---- Header ----
     doc.fillColor('#1a202c').fontSize(16).font('Helvetica-Bold').text('PETROL PUMP PRO', { align: 'center', marginTop: 15 });
     doc.fontSize(9).font('Helvetica').text('123 Highway Revenue Road, MH', { align: 'center' });
-    doc.fontSize(8).text('GSTIN: 27AABCT2388Q1Z3', { align: 'center' });
-    doc.fontSize(8).text('Phone: +91 9876543210', { align: 'center' });
+    doc.fontSize(8).text('GSTIN: 27XXXXX0000X1ZX', { align: 'center' });
+    doc.fontSize(8).text('Phone: +91 98XXX-XX000', { align: 'center' });
     
     doc.moveDown(0.5);
     doc.fontSize(11).font('Helvetica-Bold').text('TAX INVOICE', { align: 'center' });
