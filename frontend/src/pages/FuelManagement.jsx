@@ -12,7 +12,7 @@ const FuelManagement = () => {
   const [showAddModal, setShowAddModal] = useState(false);
   const [editModal, setEditModal] = useState(null);
   const [stockModal, setStockModal] = useState(null);
-  const [form, setForm] = useState({ name: 'Petrol', pricePerLiter: '', stock: '' });
+  const [form, setForm] = useState({ name: '', pricePerLiter: '', stock: '' });
   const [editForm, setEditForm] = useState({ pricePerLiter: '', stock: '' });
   const [stockAmount, setStockAmount] = useState('');
   const [submitting, setSubmitting] = useState(false);
@@ -43,7 +43,7 @@ const FuelManagement = () => {
       await api.post('/fuel', form);
       showMsg(`${form.name} added successfully!`);
       setShowAddModal(false);
-      setForm({ name: 'Petrol', pricePerLiter: '', stock: '' });
+      setForm({ name: '', pricePerLiter: '', stock: '' });
       fetchFuels();
     } catch (err) {
       showMsg(err.response?.data?.message || 'Failed to add fuel.', true);
@@ -220,15 +220,14 @@ const FuelManagement = () => {
             <form onSubmit={handleAdd}>
               <div style={{ marginBottom: 14 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#4a5568', marginBottom: 5 }}>Fuel Type</label>
-                <select
+                <input
+                  type="text"
+                  required
                   value={form.name}
                   onChange={(e) => setForm({ ...form, name: e.target.value })}
+                  placeholder="e.g. Premium Petrol"
                   style={inputStyle}
-                >
-                  <option>Petrol</option>
-                  <option>Diesel</option>
-                  <option>CNG</option>
-                </select>
+                />
               </div>
               <div style={{ marginBottom: 14 }}>
                 <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#4a5568', marginBottom: 5 }}>Price per Liter (₹)</label>
