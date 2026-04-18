@@ -422,9 +422,11 @@ const getDashboard = async (req, res, next) => {
 
     const monthStart = new Date(todayStart.getFullYear(), todayStart.getMonth(), 1);
 
+    const matchStaff = req.user.role === 'staff' ? { staffId: req.user._id } : {};
+
     const [todaySales, monthSales, fuelStocks, recentSales] = await Promise.all([
       Sale.aggregate([
-        { $match: { date: { $gte: todayStart, $lte: todayEnd } } },
+        { $match: { ...matchStaff, date: { $gte: todayStart, $lte: todayEnd } } },
         {
           $group: {
             _id: null,
@@ -435,7 +437,7 @@ const getDashboard = async (req, res, next) => {
         },
       ]),
       Sale.aggregate([
-        { $match: { date: { $gte: monthStart } } },
+        { $match: { ...matchStaff, date: { $gte: monthStart } } },
         {
           $group: {
             _id: null,
@@ -445,7 +447,7 @@ const getDashboard = async (req, res, next) => {
         },
       ]),
       require('../models/Fuel').find({ isActive: true }).select('name stock pricePerLiter'),
-      Sale.find()
+      Sale.find(matchStaff)
         .sort({ date: -1 })
         .limit(5)
         .select('billNumber fuelName quantity totalAmount date customerName'),
