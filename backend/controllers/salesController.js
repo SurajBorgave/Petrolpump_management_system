@@ -42,7 +42,10 @@ const createSale = async (req, res, next) => {
     }
 
     // Auto calculate total amount
-    const totalAmount = parseFloat((fuel.pricePerLiter * quantity).toFixed(2));
+    let totalAmount = parseFloat((fuel.pricePerLiter * quantity).toFixed(2));
+    if (paymentMethod === 'cash' || !paymentMethod) {
+      totalAmount = Math.round(totalAmount);
+    }
 
     // Create sale
     const sale = await Sale.create({

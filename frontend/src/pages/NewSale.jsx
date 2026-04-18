@@ -33,11 +33,15 @@ const NewSale = () => {
     setForm(updated);
     setError('');
 
+    const activePayment = name === 'paymentMethod' ? value : form.paymentMethod;
+
     if (name === 'fuelType') {
       const fuel = fuels.find((f) => f._id === value);
       setSelectedFuel(fuel || null);
       if (fuel && updated.quantity) {
-        setAmountInput((fuel.pricePerLiter * parseFloat(updated.quantity)).toFixed(2));
+        let amt = fuel.pricePerLiter * parseFloat(updated.quantity);
+        if (activePayment === 'cash') amt = Math.round(amt);
+        setAmountInput(activePayment === 'cash' ? amt.toString() : amt.toFixed(2));
       } else {
         setAmountInput('');
       }
@@ -45,9 +49,19 @@ const NewSale = () => {
 
     if (name === 'quantity') {
       if (selectedFuel && value && !isNaN(value)) {
-        setAmountInput((selectedFuel.pricePerLiter * parseFloat(value)).toFixed(2));
+        let amt = selectedFuel.pricePerLiter * parseFloat(value);
+        if (activePayment === 'cash') amt = Math.round(amt);
+        setAmountInput(activePayment === 'cash' ? amt.toString() : amt.toFixed(2));
       } else {
         setAmountInput('');
+      }
+    }
+
+    if (name === 'paymentMethod') {
+      if (selectedFuel && form.quantity && !isNaN(form.quantity)) {
+        let amt = selectedFuel.pricePerLiter * parseFloat(form.quantity);
+        if (value === 'cash') amt = Math.round(amt);
+        setAmountInput(value === 'cash' ? amt.toString() : amt.toFixed(2));
       }
     }
   };
@@ -221,7 +235,7 @@ const NewSale = () => {
                 <div>
                   <label style={labelStyle}>Total Amount (₹) *</label>
                   <input
-                    type="number" name="amountInput" min="1" step="1"
+                    type="number" name="amountInput" min="1" step={form.paymentMethod === 'cash' ? '1' : '0.01'}
                     value={amountInput} onChange={handleAmountChange} disabled={!selectedFuel}
                     placeholder="e.g. 1000" style={inputStyle} required
                   />
