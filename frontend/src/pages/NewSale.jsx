@@ -12,8 +12,8 @@ const NewSale = () => {
     vehicleNumber: '',
     paymentMethod: 'cash',
   });
+  const [amountInput, setAmountInput] = useState('');
   const [selectedFuel, setSelectedFuel] = useState(null);
-  const [totalAmount, setTotalAmount] = useState(0);
   const [submitting, setSubmitting] = useState(false);
   const [error, setError] = useState('');
   const [success, setSuccess] = useState(null);
@@ -23,7 +23,12 @@ const NewSale = () => {
   }, []);
 
   const handleChange = (e) => {
-    const { name, value } = e.target;
+    let { name, value } = e.target;
+    // Auto-uppercase vehicle number
+    if (name === 'vehicleNumber') {
+      value = value.toUpperCase();
+    }
+    
     const updated = { ...form, [name]: value };
     setForm(updated);
     setError('');
@@ -32,32 +37,52 @@ const NewSale = () => {
       const fuel = fuels.find((f) => f._id === value);
       setSelectedFuel(fuel || null);
       if (fuel && updated.quantity) {
-        setTotalAmount(parseFloat((fuel.pricePerLiter * parseFloat(updated.quantity)).toFixed(2)));
+        setAmountInput((fuel.pricePerLiter * parseFloat(updated.quantity)).toFixed(2));
       } else {
-        setTotalAmount(0);
+        setAmountInput('');
       }
     }
 
     if (name === 'quantity') {
-      if (selectedFuel && value) {
-        setTotalAmount(parseFloat((selectedFuel.pricePerLiter * parseFloat(value)).toFixed(2)));
+      if (selectedFuel && value && !isNaN(value)) {
+        setAmountInput((selectedFuel.pricePerLiter * parseFloat(value)).toFixed(2));
       } else {
-        setTotalAmount(0);
+        setAmountInput('');
       }
+    }
+  };
+
+  const handleAmountChange = (e) => {
+    const val = e.target.value;
+    setAmountInput(val);
+    setError('');
+    if (selectedFuel && val && !isNaN(val)) {
+        setForm({ ...form, quantity: (parseFloat(val) / selectedFuel.pricePerLiter).toFixed(2) });
+    } else {
+        setForm({ ...form, quantity: '' });
     }
   };
 
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!form.fuelType) { setError('Please select a fuel type.'); return; }
-    if (!form.quantity || parseFloat(form.quantity) <= 0) { setError('Please enter a valid quantity.'); return; }
+    if (!form.quantity || parseFloat(form.quantity) <= 0) { setError('Please enter a valid quantity or amount.'); return; }
     if (selectedFuel && parseFloat(form.quantity) > selectedFuel.stock) {
       setError(`Insufficient stock. Available: ${selectedFuel.stock.toFixed(1)} L`);
       return;
     }
+    
+    if (form.vehicleNumber) {
+      const tempV = form.vehicleNumber.replace(/\s+/g, '');
+      if (!/^[A-Z]{2}[A-Z0-9]{4,9}$/.test(tempV)) {
+        setError('Invalid Vehicle Number. Use formats like MH12AB1234');
+        return;
+      }
+    }
 
     setSubmitting(true);
     try {
+      // The backend expects quantity. Amount is auto-calculated on backend as well.
       const res = await api.post('/sales', form);
       setSuccess(res.data.data.sale);
     } catch (err) {
@@ -128,7 +153,7 @@ const NewSale = () => {
               📄 Download Bill
             </button>
             <button
-              onClick={() => { setSuccess(null); setForm({ fuelType: '', quantity: '', customerName: '', vehicleNumber: '', paymentMethod: 'cash' }); setTotalAmount(0); setSelectedFuel(null); }}
+              onClick={() => { setSuccess(null); setForm({ fuelType: '', quantity: '', customerName: '', vehicleNumber: '', paymentMethod: 'cash' }); setAmountInput(''); setSelectedFuel(null); }}
               style={{ flex: 1, padding: '12px', background: '#edf2f7', color: '#4a5568', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontSize: 14 }}
             >
               New Sale
@@ -181,8 +206,8 @@ const NewSale = () => {
                 <div>
                   <label style={labelStyle}>Quantity (Liters) *</label>
                   <input
-                    type="number" name="quantity" min="0.1" step="0.1"
-                    value={form.quantity} onChange={handleChange}
+                    type="number" name="quantity" min="0.01" step="0.01"
+                    value={form.quantity} onChange={handleChange} disabled={!selectedFuel}
                     placeholder="e.g. 10.5" style={inputStyle} required
                   />
                   {selectedFuel && (
@@ -192,15 +217,19 @@ const NewSale = () => {
                   )}
                 </div>
 
-                {/* Total (read-only) */}
+                {/* Amount Output */}
                 <div>
-                  <label style={labelStyle}>Total Amount</label>
-                  <div style={{
-                    padding: '11px 14px', background: '#f7fafc', border: '1.5px solid #e2e8f0',
-                    borderRadius: 8, fontSize: 18, fontWeight: 700, color: '#1a3c5e',
-                  }}>
-                    ₹{totalAmount.toFixed(2)}
-                  </div>
+                  <label style={labelStyle}>Total Amount (₹) *</label>
+                  <input
+                    type="number" name="amountInput" min="1" step="1"
+                    value={amountInput} onChange={handleAmountChange} disabled={!selectedFuel}
+                    placeholder="e.g. 1000" style={inputStyle} required
+                  />
+                   {selectedFuel && (
+                    <p style={{ color: '#718096', fontSize: 11, marginTop: 4 }}>
+                      Rate: ₹{selectedFuel.pricePerLiter}/L
+                    </p>
+                  )}
                 </div>
 
                 {/* Customer */}
@@ -214,7 +243,7 @@ const NewSale = () => {
                 <div>
                   <label style={labelStyle}>Vehicle Number</label>
                   <input type="text" name="vehicleNumber" value={form.vehicleNumber} onChange={handleChange}
-                    placeholder="e.g. MH01AB1234" style={inputStyle} />
+                    placeholder="e.g. MH12AB1234" style={inputStyle} />
                 </div>
 
                 {/* Payment */}
@@ -239,7 +268,7 @@ const NewSale = () => {
               </div>
 
               {/* Summary bar */}
-              {selectedFuel && form.quantity && (
+              {selectedFuel && form.quantity && amountInput && (
                 <div style={{
                   marginTop: 20, padding: '14px 18px', background: '#ebf8ff',
                   borderRadius: 8, border: '1px solid #90cdf4', display: 'flex', justifyContent: 'space-between', alignItems: 'center',
@@ -247,7 +276,7 @@ const NewSale = () => {
                   <div style={{ fontSize: 13, color: '#2b6cb0' }}>
                     <strong>{form.quantity} L</strong> × ₹{selectedFuel.pricePerLiter}
                   </div>
-                  <div style={{ fontSize: 18, fontWeight: 700, color: '#1a3c5e' }}>= ₹{totalAmount.toFixed(2)}</div>
+                  <div style={{ fontSize: 18, fontWeight: 700, color: '#1a3c5e' }}>= ₹{parseFloat(amountInput).toFixed(2)}</div>
                 </div>
               )}
 
