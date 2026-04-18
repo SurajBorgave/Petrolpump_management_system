@@ -158,130 +158,101 @@ const generateBill = async (req, res, next) => {
       return res.status(404).json({ success: false, message: 'Sale not found.' });
     }
 
-    const doc = new PDFDocument({ size: 'A5', margin: 40 });
+    // Thermal Receipt dimensions (e.g., 3-inch roll format) for an authentic look
+    const doc = new PDFDocument({ size: [300, 500], margin: 20 });
 
     res.setHeader('Content-Type', 'application/pdf');
     res.setHeader(
       'Content-Disposition',
-      `attachment; filename=bill-${sale.billNumber}.pdf`
+      `attachment; filename=Receipt-${sale.billNumber}.pdf`
     );
 
     doc.pipe(res);
 
+    // ---- Receipt Border ----
+    doc.roundedRect(10, 10, 280, 480, 10).strokeColor('#e2e8f0').lineWidth(1).stroke();
+    
     // ---- Header ----
-    doc
-      .fillColor('#1a3c5e')
-      .fontSize(22)
-      .font('Helvetica-Bold')
-      .text('PETROL PUMP', { align: 'center' });
-
-    doc
-      .fillColor('#555')
-      .fontSize(10)
-      .font('Helvetica')
-      .text('MANAGEMENT SYSTEM', { align: 'center' });
-
+    doc.fillColor('#1a202c').fontSize(16).font('Helvetica-Bold').text('PETROL PUMP PRO', { align: 'center', marginTop: 15 });
+    doc.fontSize(9).font('Helvetica').text('123 Highway Revenue Road, MH', { align: 'center' });
+    doc.fontSize(8).text('GSTIN: 27AABCT2388Q1Z3', { align: 'center' });
+    doc.fontSize(8).text('Phone: +91 9876543210', { align: 'center' });
+    
+    doc.moveDown(0.5);
+    doc.fontSize(11).font('Helvetica-Bold').text('TAX INVOICE', { align: 'center' });
+    
     doc.moveDown(0.3);
-    doc
-      .strokeColor('#1a3c5e')
-      .lineWidth(2)
-      .moveTo(40, doc.y)
-      .lineTo(375, doc.y)
-      .stroke();
+    doc.moveTo(15, doc.y).lineTo(285, doc.y).dash(3, { space: 3 }).strokeColor('#cbd5e0').stroke();
+    doc.undash();
+    doc.moveDown(0.5);
+    
+    // ---- Meta Info ----
+    const d = new Date(sale.date);
+    doc.fontSize(9).font('Helvetica-Bold').text('Bill No : ', 20, doc.y, { continued: true }).font('Helvetica').text(sale.billNumber);
+    doc.font('Helvetica-Bold').text('Date    : ', 20, doc.y, { continued: true }).font('Helvetica').text(d.toLocaleDateString('en-IN') + ' ' + d.toLocaleTimeString('en-IN'));
+    
+    doc.font('Helvetica-Bold').text('User    : ', 20, doc.y, { continued: true }).font('Helvetica').text(sale.customerName || 'Walk-in Customer');
+    if (sale.vehicleNumber) {
+        doc.font('Helvetica-Bold').text('Vehicle : ', 20, doc.y, { continued: true }).font('Helvetica').text(sale.vehicleNumber);
+    }
+    doc.font('Helvetica-Bold').text('Pay Mode: ', 20, doc.y, { continued: true }).font('Helvetica').text(sale.paymentMethod.toUpperCase());
+    doc.font('Helvetica-Bold').text('Nozzle  : ', 20, doc.y, { continued: true }).font('Helvetica').text('NZ-01 (' + sale.staffName + ')');
 
     doc.moveDown(0.5);
-
-    // ---- Bill Info ----
-    doc.fillColor('#222').fontSize(11).font('Helvetica-Bold');
-    doc.text(`Bill No: ${sale.billNumber}`, { continued: true });
-    doc.font('Helvetica').text(`    Date: ${new Date(sale.date).toLocaleDateString('en-IN')}`, { align: 'right' });
-
-    doc.moveDown(0.4);
-    doc
-      .strokeColor('#ddd')
-      .lineWidth(1)
-      .moveTo(40, doc.y)
-      .lineTo(375, doc.y)
-      .stroke();
-    doc.moveDown(0.4);
-
-    // ---- Customer Info ----
-    doc.fontSize(10).font('Helvetica');
-    const infoY = doc.y;
-    doc.fillColor('#555').text('Customer:', 40, infoY);
-    doc.fillColor('#222').text(sale.customerName, 130, infoY);
-
-    if (sale.vehicleNumber) {
-      doc.moveDown(0.3);
-      const vY = doc.y;
-      doc.fillColor('#555').text('Vehicle No:', 40, vY);
-      doc.fillColor('#222').text(sale.vehicleNumber, 130, vY);
-    }
-
-    doc.moveDown(0.3);
-    const sY = doc.y;
-    doc.fillColor('#555').text('Staff:', 40, sY);
-    doc.fillColor('#222').text(sale.staffName, 130, sY);
-
-    doc.moveDown(0.3);
-    const pmY = doc.y;
-    doc.fillColor('#555').text('Payment:', 40, pmY);
-    doc.fillColor('#222').text(sale.paymentMethod.toUpperCase(), 130, pmY);
-
-    doc.moveDown(0.6);
+    doc.moveTo(15, doc.y).lineTo(285, doc.y).dash(3, { space: 3 }).strokeColor('#cbd5e0').stroke();
+    doc.undash();
+    doc.moveDown(0.5);
 
     // ---- Table Header ----
-    const tableTop = doc.y;
-    doc.fillColor('#1a3c5e').rect(40, tableTop, 335, 22).fill();
-    doc.fillColor('#fff').fontSize(10).font('Helvetica-Bold');
-    doc.text('Fuel Type', 48, tableTop + 6);
-    doc.text('Qty (L)', 155, tableTop + 6, { width: 60, align: 'right' });
-    doc.text('Rate/L (₹)', 220, tableTop + 6, { width: 70, align: 'right' });
-    doc.text('Amount (₹)', 295, tableTop + 6, { width: 75, align: 'right' });
+    const startY = doc.y;
+    doc.font('Helvetica-Bold').fontSize(8);
+    doc.text('ITEM', 20, startY);
+    doc.text('RATE', 130, startY);
+    doc.text('QTY(L)', 180, startY);
+    doc.text('AMOUNT', 225, startY, { width: 55, align: 'right' });
+    
+    doc.moveDown(0.3);
+    doc.moveTo(15, doc.y).lineTo(285, doc.y).strokeColor('#cbd5e0').stroke();
+    doc.moveDown(0.3);
 
     // ---- Table Row ----
-    const rowTop = tableTop + 22;
-    doc.fillColor('#f0f4f8').rect(40, rowTop, 335, 22).fill();
-    doc.fillColor('#222').font('Helvetica').fontSize(10);
-    doc.text(sale.fuelName, 48, rowTop + 6);
-    doc.text(sale.quantity.toString(), 155, rowTop + 6, { width: 60, align: 'right' });
-    doc.text(`₹${sale.pricePerLiter.toFixed(2)}`, 220, rowTop + 6, { width: 70, align: 'right' });
-    doc.text(`₹${sale.totalAmount.toFixed(2)}`, 295, rowTop + 6, { width: 75, align: 'right' });
+    const itemY = doc.y;
+    doc.font('Helvetica-Bold').fontSize(9);
+    doc.text(sale.fuelName.toUpperCase(), 20, itemY);
+    doc.font('Helvetica');
+    doc.text(sale.pricePerLiter.toFixed(2), 130, itemY);
+    doc.text(sale.quantity.toFixed(2), 180, itemY);
+    doc.font('Helvetica-Bold');
+    doc.text(sale.totalAmount.toFixed(2), 225, itemY, { width: 55, align: 'right' });
 
-    doc.moveDown(0.2);
-    doc.y = rowTop + 26;
+    doc.moveDown(1.2);
+    doc.moveTo(15, doc.y).lineTo(285, doc.y).dash(3, { space: 3 }).strokeColor('#cbd5e0').stroke();
+    doc.undash();
+    doc.moveDown(0.8);
 
-    // ---- Total ----
-    doc
-      .strokeColor('#1a3c5e')
-      .lineWidth(1.5)
-      .moveTo(40, doc.y)
-      .lineTo(375, doc.y)
-      .stroke();
-
-    doc.moveDown(0.4);
-    doc
-      .fillColor('#1a3c5e')
-      .font('Helvetica-Bold')
-      .fontSize(13)
-      .text(`TOTAL AMOUNT: ₹${sale.totalAmount.toFixed(2)}`, { align: 'right' });
+    // ---- Totals ----
+    doc.font('Helvetica-Bold').fontSize(14);
+    doc.text('TOTAL:', 20, doc.y, { continued: true });
+    doc.text(`Rs. ${sale.totalAmount.toFixed(2)}`, 100, doc.y, { align: 'right', width: 180 });
+    
+    // ---- Tax details ----
+    doc.moveDown(0.8);
+    doc.font('Helvetica').fontSize(8);
+    const taxAmt = (sale.totalAmount * 0.18).toFixed(2);
+    const baseAmt = (sale.totalAmount - taxAmt).toFixed(2);
+    doc.text(`Includes Base Price Rs. ${baseAmt}`, { align: 'center' });
+    doc.text(`Includes GST (18%) Rs. ${taxAmt}`, { align: 'center' });
 
     doc.moveDown(1.5);
+    doc.moveTo(15, doc.y).lineTo(285, doc.y).dash(3, { space: 3 }).strokeColor('#cbd5e0').stroke();
+    doc.undash();
 
     // ---- Footer ----
-    doc
-      .strokeColor('#ddd')
-      .lineWidth(1)
-      .moveTo(40, doc.y)
-      .lineTo(375, doc.y)
-      .stroke();
-
+    doc.moveDown(1);
+    doc.font('Helvetica-Bold').fontSize(10).text('THANK YOU FOR YOUR VISIT!', { align: 'center' });
+    doc.font('Helvetica').fontSize(9).text('DRIVE SAFE. SAVE FUEL.', { align: 'center' });
     doc.moveDown(0.5);
-    doc
-      .fillColor('#888')
-      .font('Helvetica')
-      .fontSize(9)
-      .text('Thank you for visiting! Drive Safe.', { align: 'center' });
+    doc.fontSize(7).fillColor('#a0aec0').text('Generated by PetrolPump Pro Systems', { align: 'center' });
 
     doc.end();
   } catch (error) {
