@@ -268,12 +268,6 @@ const FuelManagement = () => {
                   onChange={(e) => setEditForm({ ...editForm, pricePerLiter: e.target.value })}
                   style={inputStyle} />
               </div>
-              <div style={{ marginBottom: 20 }}>
-                <label style={{ display: 'block', fontSize: 13, fontWeight: 600, color: '#4a5568', marginBottom: 5 }}>Current Stock (Liters)</label>
-                <input type="number" step="0.1" min="0" value={editForm.stock}
-                  onChange={(e) => setEditForm({ ...editForm, stock: e.target.value })}
-                  style={inputStyle} />
-              </div>
               <div style={{ display: 'flex', gap: 10 }}>
                 <button type="button" onClick={() => setEditModal(null)}
                   style={{ flex: 1, padding: '10px', background: '#edf2f7', color: '#4a5568', border: 'none', borderRadius: 8, cursor: 'pointer', fontWeight: 600 }}>
